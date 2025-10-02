@@ -1,0 +1,82 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential linux-headers-$(uname -r) gcc make
+    
+    - name: Build kernel modules
+      run: |
+        make modules -j$(nproc)
+      env:
+        TARGET_ARCH: ${{ matrix.arch }}
+    
+    - name: Check build artifacts
+      run: |
+        find kernel-open -name "*.ko" -type f
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: kernel-modules-${{ matrix.arch }}
+        path: |
+          kernel-open/**/*.ko
+        retention-days: 30
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: kernel-modules-x86_64
+    
+    - name: Create release tag
+      id: create_tag
+      run: |
+        VERSION=$(cat version.mk | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+        if [ -z "$VERSION" ]; then
+          VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=release-$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.create_tag.outputs.tag }}
+        name: Release ${{ steps.create_tag.outputs.version }}
+        body: |
+          Automated release of NVIDIA Open GPU Kernel Modules
+          Version: ${{ steps.create_tag.outputs.version }}
+          Architecture: x86_64
+        files: |
+          **/*.ko
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
