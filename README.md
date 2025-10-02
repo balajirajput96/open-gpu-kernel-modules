@@ -77,6 +77,17 @@ versions that are supported with the proprietary NVIDIA kernel modules.
 This is currently Linux kernel 4.15 or newer.
 
 
+## CI/CD and Deployment
+
+This repository includes automated CI/CD workflows using GitHub Actions:
+
+- **Continuous Integration**: Automatically builds and validates kernel modules on every pull request and commit
+- **Automated Deployment**: Creates releases with build artifacts when changes are merged to the main branch
+- **Manual Deployment**: Workflows can be triggered manually from the Actions tab
+
+For detailed information about the deployment process, see [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md).
+
+
 ## How to Contribute
 
 Contributions can be made by creating a pull request on
