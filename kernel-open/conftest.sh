@@ -3616,6 +3616,41 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_MODE_CONFIG_HAS_ALLOW_FB_MODIFIERS" "" "types"
         ;;
 
+        drm_fb_create_takes_format_info)
+            #
+            # Determine if drm_mode_config_funcs.fb_create() receives a
+            # struct drm_format_info argument. This parameter was added in
+            # Linux 6.17 by commit 81112eaac559.
+            #
+            CODE="
+            #include <drm/drm_mode_config.h>
+            #include <drm/drm_framebuffer.h>
+
+            static const struct drm_mode_config_funcs funcs;
+            void conftest_drm_fb_create_takes_format_info(void) {
+                funcs.fb_create(NULL, NULL, NULL, NULL);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FB_CREATE_TAKES_FORMAT_INFO" "" "types"
+        ;;
+
+        drm_fill_fb_struct_takes_format_info)
+            #
+            # Determine if drm_helper_mode_fill_fb_struct() receives a
+            # struct drm_format_info argument. This parameter was added in
+            # Linux 6.17 by commit a34cc7bf1034.
+            #
+            CODE="
+            #include <linux/stddef.h>
+            #include <drm/drm_modeset_helper.h>
+
+            void conftest_drm_fill_fb_struct_takes_format_info(void) {
+                drm_helper_mode_fill_fb_struct(NULL, NULL, NULL, NULL);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FILL_FB_STRUCT_TAKES_FORMAT_INFO" "" "types"
+        ;;
+
         drm_has_hdr_output_metadata)
             #
             # Determine if drm_mode.h has 'hdr_output_metadata' structure.
