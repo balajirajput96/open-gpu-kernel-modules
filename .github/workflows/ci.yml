@@ -1,0 +1,37 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-test:
+    name: Build Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          linux-headers-$(uname -r) \
+          gcc \
+          make
+    
+    - name: Build kernel modules
+      run: make modules -j$(nproc)
+    
+    - name: Verify build artifacts
+      run: |
+        echo "Checking for built kernel modules..."
+        find kernel-open -name "*.ko" -type f | tee build-artifacts.txt
+        if [ ! -s build-artifacts.txt ]; then
+          echo "Error: No kernel modules were built!"
+          exit 1
+        fi
+        echo "Build successful!"
